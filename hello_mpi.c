@@ -1,31 +1,31 @@
 #include "mpi.h"
+
+//mpicc hello_mpi.c -o hello
+ 
+#include <mpi.h>
 #include <stdio.h>
-#include <stdlib.h>
 
+int main(int argc, char** argv) {
+    // Initialize the MPI environment
+    MPI_Init(NULL, NULL);
 
-// gcc hello_mpi.c -o hello
-int main(int argc, char **argv)
-{
-   char hostname[20];
-   
-   FILE *host;
+    // Get the number of processes
+    int world_size;
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
-    if((host = fopen("/etc/hostname","r")) == NULL)
-    {
-        printf("\nNao consigo abrir o arquivo ! ");
-        exit(1);
-    }
+    // Get the rank of the process
+    int world_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
-   fscanf (host, "%s", hostname);
+    // Get the name of the processor
+    char processor_name[MPI_MAX_PROCESSOR_NAME];
+    int name_len;
+    MPI_Get_processor_name(processor_name, &name_len);
 
-   int myrank, //who am i
-       numprocs; //how many process
-   
-   MPI_Init(&argc,&argv);
-   MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
-   MPI_Comm_size(MPI_COMM_WORLD,&numprocs);
-   printf("Hostname: \"%s\" Rank: \"%d\" Size: \"%d\"\n",hostname,myrank,numprocs);
-   MPI_Finalize();
-   return 0;
+    // Print off a hello world message
+    printf("Hello world from processor %s, rank %d out of %d processors\n",
+           processor_name, world_rank, world_size);
+
+    // Finalize the MPI environment.
+    MPI_Finalize();
 }
-

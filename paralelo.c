@@ -17,7 +17,7 @@ gcc-8 -fopenmp paralelo.c -o paralelo
 #define k 40
 #define position(row,col) //printf("%c[%d;%dH",k,row,col)
 #define clear() //printf("%c[2J",k)
-#define ROWS 175
+#define ROWS 176
 
 char  *TOP[ROWS];
 char  *BOTTOM[ROWS];
@@ -31,6 +31,7 @@ char  *FULL[ROWS] = {
   "....O...................................",
   ".....O..................................",
   "...OOO..................................",
+  "........................................",
   "........................................",
   "........................................",
   "........................................",
@@ -295,13 +296,13 @@ int main( int argc, char* argv[] ) {
 
   double start,end;
   start = get_wall_time();
-  int steps = 10000;      // # of steps in game
+  int steps = 100;      // # of steps in game
   int u;
   char **part, **nextPart, **tmp;
   //empty screen for next step
   clear();
   initialize();
-  part   = TOP;
+  part = TOP;
   nextPart = BOTTOM;
   //display( part );       // show initial step
   //sao as geracoes
@@ -316,7 +317,7 @@ int main( int argc, char* argv[] ) {
     part = nextPart;
     nextPart = tmp;
   }
-  //display(part); // show result ie. final step
+  display(part); // show result ie. final step
 
   
   end = get_wall_time();

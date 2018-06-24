@@ -28,6 +28,8 @@ if (my_rank != 0)
    }
 else
    {
+      sprintf(message, "Greetings from process %d!", my_rank);
+
    for (source = 1; source < proc_n; source++)
       {
       MPI_Recv (message, 100, MPI_CHAR , source, tag, MPI_COMM_WORLD, &status);

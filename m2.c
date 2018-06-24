@@ -6,9 +6,6 @@ gcc-8 -fopenmp paralelo.c -o paralelo
 mpicc mpi_paralelo.c -o mpi_paralelo
 mpirun -np 2 ./mpi_paralelo
 
-mpicc mpi.c -o mpi_paralelo
-
-
 */
 
 #include "mpi.h"
@@ -634,7 +631,18 @@ void  life2( char** part, char** nextPart, int my_rank ) {
       //MPI_Recv( nextPart[ROWS/2-1], ROWSIZE, MPI_CHAR,    0,     0,  MPI_COMM_WORLD, &status );
       MPI_Send( message,   ROWSIZE, MPI_CHAR,    0,     0,  MPI_COMM_WORLD );
       MPI_Send( message,   ROWSIZE, MPI_CHAR,    0,     0,  MPI_COMM_WORLD );
-      
+      GLOBAL = GLOBAL + 1;
+      printf("sai do metodo life ---- \n" );
+      display(nextPart);
+       printf("---------------------------\n");       // show initial step
+      printf("---------------------------\n");       // show initial step
+      printf("---------------------------\n");       // show initial step
+      printf("---------------------------\n");       // show initial step
+      printf("---------------------------\n");       // show initial step
+      printf("---------------------------\n");       // show initial step
+      printf("---------------------------\n");       // show initial step
+
+
 
 
      }
@@ -709,86 +717,6 @@ void  life2( char** part, char** nextPart, int my_rank ) {
   }
 }*/
 
-void life3( char** dish, char** newGen, int rank ) {
-  /*
-   * Given an array of string representing the current population of cells
-   * in a petri dish, computes the new generation of cells according to
-   * the rules of the game. A new array of strings is returned.
-   */
-  int i, j, row;
-  int rowLength = strlen( dish[0] );
-  int dishLength = ROWS;
-  
-  int lowerRow, upperRow;
-
-  //--- slice the array into two halves.  Rank 0 is lower half, ---
-  //--  Rank 1 is upper half.                                   ---
-  if ( rank == 0 ) {
-    lowerRow = 0;
-    upperRow = ROWS/2;
-  }
-  if ( rank == 1 ) {
-    lowerRow = ROWS/2;
-    upperRow = ROWS;
-  }
-  
-  for (row = lowerRow; row < upperRow; row++) {// each row
-    
-    if ( dish[row] == NULL )
-      continue;
-
-    for ( i = 0; i < rowLength; i++) { // each char in the
-                                       // row
-
-      int r, j, neighbors = 0;
-      char current = dish[row][i];
-
-      // loop in a block that is 3x3 around the current cell
-      // and count the number of '#' cells.
-      for ( r = row - 1; r <= row + 1; r++) {
-
-        // make sure we wrap around from bottom to top
-        int realr = r;
-        if (r == -1)
-          realr = dishLength - 1;
-        if (r == dishLength)
-          realr = 0;
-
-        int j;
-        for (j = i - 1; j <= i + 1; j++) {
-
-          // make sure we wrap around from left to right
-          int realj = j;
-          if (j == -1)
-            realj = rowLength - 1;
-          if (j == rowLength)
-            realj = 0;
-
-          if (r == row && j == i)
-            continue; // current cell is not its
-          // neighbor
-          if (dish[realr][realj] == 'O')
-            neighbors++;
-        }
-      }
-
-      if (current == 'O') {
-        if (neighbors < 2 || neighbors > 3)
-          newGen[row][i] =  '.';
-        else
-          newGen[row][i] = 'O';
-      }
-
-      if (current == '.') {
-        if (neighbors == 3)
-          newGen[row][i] = 'O';
-        else
-          newGen[row][i] = '.';
-      }
-    }
-  }
-}
-
 
 
 int main( int argc, char* argv[] ) {
@@ -797,7 +725,11 @@ int main( int argc, char* argv[] ) {
   ************/
   double t1,t2;
   t1 = MPI_Wtime();  // inicia a contagem do tempo  
-  int steps = 1000;      // # of steps in game
+
+
+  double start,end;
+  start = get_wall_time();
+  int steps = 10;      // # of steps in game
   int u;
   //empty screen for next step
   clear();
@@ -807,21 +739,22 @@ int main( int argc, char* argv[] ) {
   part   = TOP;
   nextPart = BOTTOM;
 
+
   MPI_Init (&argc , & argv);
 
-  //char processor_name[MPI_MAX_PROCESSOR_NAME];
+  char processor_name[MPI_MAX_PROCESSOR_NAME];
 
   MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
   MPI_Comm_size(MPI_COMM_WORLD, &proc_n);
-
-  //printf("Hello world from processors, rank %d out of %d processors\n",my_rank, proc_n);
 
   for (u = 0; u < steps; u++) { // show rest of the steps
     // follow rules in game of life to current step and display next step
     //game(part, nextPart);
     //gameMPI(part, nextPart);
 
+    printf("rank %d out of %d proc_n\n",my_rank, proc_n);
 
+    life2(part, nextPart, my_rank);
 
     if (my_rank == 0 ) {
       //dividir o tabuleiro de acordo com o numero de escravos
@@ -832,14 +765,12 @@ int main( int argc, char* argv[] ) {
           MPI_Send( "0", ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD );
           sprintf(message, "%d", ROWS-1);
           MPI_Send(message, ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD );
-          MPI_Send(nextPart[0], ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD );
           MPI_Recv( message,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
-
           MPI_Recv( message,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
-          MPI_Recv(nextPart[ROWS-1],   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
-
-
-
+        
+          //MPI_Recv( nextPart,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
+          //MPI_Recv( nextPart,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
+        
         }else if(slaveID == 1 && proc_n > 2 ){
           MPI_Send( "0", ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD );
           sprintf(message, "%d", ROWS-1);
@@ -848,10 +779,9 @@ int main( int argc, char* argv[] ) {
           MPI_Send(message, ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD );
           MPI_Recv( message,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
           MPI_Recv( message,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
-          MPI_Send(nextPart[0], ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD );
-
-          MPI_Recv(nextPart[ROWS-1],   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
-
+          //MPI_Recv( nextPart,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
+          //MPI_Recv( nextPart,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
+        
         }else{  //para os demais slaves
 
           int initialPortion = (ROWS/proc_n) * (slaveID - 1);
@@ -864,115 +794,64 @@ int main( int argc, char* argv[] ) {
     
           MPI_Recv( message,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
           MPI_Recv( message,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
-          MPI_Send(nextPart[0], ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD );
-
-          MPI_Recv(nextPart[ROWS-1],   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
-
+          //MPI_Recv( nextPart,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
+          //MPI_Recv( nextPart,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
+        
         }
       }
-    }else{
 
-      int i, j, row;
-      int rowLength = strlen( part[0] );
-      int dishLength = ROWS;
-      
-      int lowerRow, upperRow;
+     
+    }
 
 
-      int m1;
-      int m2;
-      MPI_Recv(message, ROWSIZE, MPI_CHAR,    0,     0,  MPI_COMM_WORLD, &status );
-      MPI_Send( message,   ROWSIZE, MPI_CHAR,    0,     0,  MPI_COMM_WORLD );
-      MPI_Send( nextPart[ROWS-1],   ROWSIZE, MPI_CHAR,    0,     0,  MPI_COMM_WORLD );
-      
-      m1 = atoi(message);
-      MPI_Recv(message, ROWSIZE, MPI_CHAR,    0,     0,  MPI_COMM_WORLD, &status );
-      MPI_Send( message,   ROWSIZE, MPI_CHAR,    0,     0,  MPI_COMM_WORLD );
 
-      m2 = atoi(message);
 
-      MPI_Recv(nextPart[0], ROWSIZE, MPI_CHAR,    0,     0,  MPI_COMM_WORLD, &status );
-
-      if(m2 > m1){
-        lowerRow = m1;
-        upperRow = m2;
-      }else{
-        lowerRow = m2;
-        upperRow = m1;
-      }
-
-        for (row = lowerRow; row < upperRow; row++) {// each row
     
-          if (part[row] == NULL )
-            continue;
 
-          for ( i = 0; i < rowLength; i++) { // each char in the
-                                             // row
-
-            int r, j, neighbors = 0;
-            char current = part[row][i];
-
-            // loop in a block that is 3x3 around the current cell
-            // and count the number of 'O' cells.
-            for ( r = row - 1; r <= row + 1; r++) {
-
-              // make sure we wrap around from bottom to top
-              int realr = r;
-              if (r == -1)
-                realr = dishLength - 1;
-              if (r == dishLength)
-                realr = 0;
-
-              for (j = i - 1; j <= i + 1; j++) {
-
-                // make sure we wrap around from left to right
-                int realj = j;
-                if (j == -1)
-                  realj = rowLength - 1;
-                if (j == rowLength)
-                  realj = 0;
-
-                if (r == row && j == i)
-                  continue; // current cell is not its
-                // neighbor
-                if (part[realr][realj] == 'O')
-                  neighbors++;
-              }
-            }
-
-            if (current == 'O') {
-              if (neighbors < 2 || neighbors > 3)
-                nextPart[row][i] = '.';
-              else
-                nextPart[row][i] = 'O';
-            }
-
-            if (current == '.') {
-              if (neighbors == 3)
-                nextPart[row][i] = 'O';
-              else
-                nextPart[row][i] = '.';
-            }
-          }
-        }
-
-    }//fim else slaves
-
-    // copy future to dish
-    tmp = part;
-    part = nextPart;
-    nextPart = tmp;
-
-  } //final steps (generatins)
-
-  t2 = MPI_Wtime(); // termina a contagem do tempo
-  MPI_Finalize();
-  //display(part);
-  if (my_rank == 0 ) {
+  /*if (my_rank == 0 ) {
     display( part );       // show initial step
-    printf("\nTempo de execucao: %f\n\n", t2-t1); 
+    printf("---------------------------\n");       // show initial step
+    printf("---------------------------\n");       // show initial step
+    printf("---------------------------\n");       // show initial step
+    printf("---------------------------\n");       // show initial step
+    printf("---------------------------\n");       // show initial step
+    printf("---------------------------\n");       // show initial step
+    printf("---------------------------\n");       // show initial step
+  }*/
+
+      
+
+      printf("vou atualizar ---- \n" );
+
+      tmp = part; // obtain next step
+      part = nextPart;
+      nextPart = tmp;
+
+
+      //printf("GLOBAL ---- %d\n", GLOBAL );
+
+
+    
+
   }
 
+
+
+  end = get_wall_time();
+  //printf("Total time elasped is %lf \n",(end-start));
+  t2 = MPI_Wtime(); // termina a contagem do tempo
+  MPI_Finalize();
+  if (my_rank == 0 ) {
+    display( nextPart );       // show initial step
+    //printf("%s\n",nextPart[ROWS]);       // show initial step
+    //printf("---------------------------\n");       // show initial step
+    //printf("%s\n",nextPart[ROWS/2-1] );       // show initial step
+    //printf("\nTempo de execucao: %f\n\n", t2-t1); 
+  }
+
+
+
+  return 0;
 
 
 

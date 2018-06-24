@@ -6,9 +6,6 @@ gcc-8 -fopenmp paralelo.c -o paralelo
 mpicc mpi_paralelo.c -o mpi_paralelo
 mpirun -np 2 ./mpi_paralelo
 
-mpicc mpi.c -o mpi_paralelo
-
-
 */
 
 #include "mpi.h"
@@ -634,7 +631,18 @@ void  life2( char** part, char** nextPart, int my_rank ) {
       //MPI_Recv( nextPart[ROWS/2-1], ROWSIZE, MPI_CHAR,    0,     0,  MPI_COMM_WORLD, &status );
       MPI_Send( message,   ROWSIZE, MPI_CHAR,    0,     0,  MPI_COMM_WORLD );
       MPI_Send( message,   ROWSIZE, MPI_CHAR,    0,     0,  MPI_COMM_WORLD );
-      
+      GLOBAL = GLOBAL + 1;
+      printf("sai do metodo life ---- \n" );
+      //display(nextPart);
+       printf("---------------------------\n");       // show initial step
+      printf("---------------------------\n");       // show initial step
+      printf("---------------------------\n");       // show initial step
+      printf("---------------------------\n");       // show initial step
+      printf("---------------------------\n");       // show initial step
+      printf("---------------------------\n");       // show initial step
+      printf("---------------------------\n");       // show initial step
+
+
 
 
      }
@@ -754,8 +762,7 @@ void life3( char** dish, char** newGen, int rank ) {
         if (r == dishLength)
           realr = 0;
 
-        int j;
-        for (j = i - 1; j <= i + 1; j++) {
+        for (int j = i - 1; j <= i + 1; j++) {
 
           // make sure we wrap around from left to right
           int realj = j;
@@ -797,7 +804,11 @@ int main( int argc, char* argv[] ) {
   ************/
   double t1,t2;
   t1 = MPI_Wtime();  // inicia a contagem do tempo  
-  int steps = 1000;      // # of steps in game
+
+
+  double start,end;
+  start = get_wall_time();
+  int steps = 10;      // # of steps in game
   int u;
   //empty screen for next step
   clear();
@@ -807,22 +818,123 @@ int main( int argc, char* argv[] ) {
   part   = TOP;
   nextPart = BOTTOM;
 
+
   MPI_Init (&argc , & argv);
 
-  //char processor_name[MPI_MAX_PROCESSOR_NAME];
+  char processor_name[MPI_MAX_PROCESSOR_NAME];
 
   MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
   MPI_Comm_size(MPI_COMM_WORLD, &proc_n);
-
-  //printf("Hello world from processors, rank %d out of %d processors\n",my_rank, proc_n);
 
   for (u = 0; u < steps; u++) { // show rest of the steps
     // follow rules in game of life to current step and display next step
     //game(part, nextPart);
     //gameMPI(part, nextPart);
 
+    /*printf("rank %d out of %d proc_n\n",my_rank, proc_n);
+
+    life2(part, nextPart, my_rank);
+
+    if (my_rank == 0 ) {
+
+            printf("aqui ---- \n" );
+      tmp = part; // obtain next step
+      part = nextPart;
+      nextPart = tmp;
+
+      //dividir o tabuleiro de acordo com o numero de escravos
+      //envia as porções to tabuleito para o escravo
+      //          buffer                #items   item-size src/dest tag   world  
+      for(slaveID = 1; slaveID < proc_n; slaveID++){
+        if(slaveID == 1 && proc_n == 2 ){
+          MPI_Send( "0", ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD );
+          sprintf(message, "%d", ROWS-1);
+          MPI_Send(message, ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD );
+          MPI_Recv( message,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
+          MPI_Recv( message,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
+        
+          //MPI_Recv( nextPart,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
+          //MPI_Recv( nextPart,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
+        
+        }else if(slaveID == 1 && proc_n > 2 ){
+          MPI_Send( "0", ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD );
+          sprintf(message, "%d", ROWS-1);
+          int finalPortion = ((ROWS/proc_n) - 1);
+          sprintf(message, "%d", finalPortion);
+          MPI_Send(message, ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD );
+          MPI_Recv( message,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
+          MPI_Recv( message,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
+          //MPI_Recv( nextPart,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
+          //MPI_Recv( nextPart,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
+        
+        }else{  //para os demais slaves
+
+          int initialPortion = (ROWS/proc_n) * (slaveID - 1);
+          sprintf(message, "%d", initialPortion);
+          MPI_Send(message, ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD );
+
+          int finalPortion = (((ROWS/proc_n) * slaveID) - 1);
+          sprintf(message, "%d", finalPortion);
+          MPI_Send(message, ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD );
+    
+          MPI_Recv( message,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
+          MPI_Recv( message,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
+          //MPI_Recv( nextPart,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
+          //MPI_Recv( nextPart,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
+        
+        }
+      }
+
+     
+    }*/
 
 
+
+
+    
+
+  /*if (my_rank == 0 ) {
+    display( part );       // show initial step
+    printf("---------------------------\n");       // show initial step
+    printf("---------------------------\n");       // show initial step
+    printf("---------------------------\n");       // show initial step
+    printf("---------------------------\n");       // show initial step
+    printf("---------------------------\n");       // show initial step
+    printf("---------------------------\n");       // show initial step
+    printf("---------------------------\n");       // show initial step
+  }*/
+
+      
+
+      /*printf("TEORICAMENTE atualizaria ---- \n" );
+
+      tmp = part; // obtain next step
+      part = nextPart;
+      nextPart = tmp;
+
+
+      //printf("GLOBAL ---- %d\n", GLOBAL );*/
+
+    /*life3( part, nextPart, my_rank );
+
+
+    if (my_rank == 0 ) {
+      //          buffer                #items   item-size src/dest tag   world  
+      MPI_Send( nextPart[    0   ], ROWSIZE, MPI_CHAR,    1,     0,  MPI_COMM_WORLD );
+      MPI_Send( nextPart[ROWS/2-1], ROWSIZE, MPI_CHAR,    1,     0,  MPI_COMM_WORLD );
+      MPI_Recv( nextPart[ROWS-1],   ROWSIZE, MPI_CHAR,    1,     0,  MPI_COMM_WORLD, &status );
+      MPI_Recv( nextPart[ROWS/2],   ROWSIZE, MPI_CHAR,    1,     0,  MPI_COMM_WORLD, &status );
+      
+      
+
+
+    }
+    if (my_rank==1 ) {
+      MPI_Recv( nextPart[    0         ], ROWSIZE, MPI_CHAR,    0,     0,  MPI_COMM_WORLD, &status );
+      MPI_Recv( nextPart[ROWS/2-1], ROWSIZE, MPI_CHAR,    0,     0,  MPI_COMM_WORLD, &status );
+      MPI_Send( nextPart[ROWS-1],   ROWSIZE, MPI_CHAR,    0,     0,  MPI_COMM_WORLD );
+      MPI_Send( nextPart[ROWS/2],   ROWSIZE, MPI_CHAR,    0,     0,  MPI_COMM_WORLD );
+    }*/
     if (my_rank == 0 ) {
       //dividir o tabuleiro de acordo com o numero de escravos
       //envia as porções to tabuleito para o escravo
@@ -832,13 +944,36 @@ int main( int argc, char* argv[] ) {
           MPI_Send( "0", ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD );
           sprintf(message, "%d", ROWS-1);
           MPI_Send(message, ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD );
-          MPI_Send(nextPart[0], ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD );
           MPI_Recv( message,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
+          printf("MASTER RECEBEU O QUE a %s\n", message ); 
+          int m1r = atoi(message);
 
           MPI_Recv( message,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
-          MPI_Recv(nextPart[ROWS-1],   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
+          printf("MASTER RECEBEU O QUE b %s\n", message ); 
+          int m2r = atoi(message);
 
+          int lowerRowRetorno;
+          int upperRowRetorno;
 
+          if(m2r > m1r){
+            lowerRowRetorno = m1r;
+            upperRowRetorno = m2r;
+          }else{
+            lowerRowRetorno = m2r;
+            upperRowRetorno = m1r;
+          }
+
+          int rowRetorno;
+          int i;
+          for (rowRetorno = lowerRowRetorno; rowRetorno < upperRowRetorno; rowRetorno++) {// each row
+            
+            if (part[rowRetorno] == NULL )
+              continue;
+
+            for ( i = 0; i < strlen( part[0] ); i++) { // each char in the
+                  part[rowRetorno][i]=nextPart[rowRetorno][i];
+            }
+          }
 
         }else if(slaveID == 1 && proc_n > 2 ){
           MPI_Send( "0", ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD );
@@ -848,9 +983,6 @@ int main( int argc, char* argv[] ) {
           MPI_Send(message, ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD );
           MPI_Recv( message,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
           MPI_Recv( message,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
-          MPI_Send(nextPart[0], ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD );
-
-          MPI_Recv(nextPart[ROWS-1],   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
 
         }else{  //para os demais slaves
 
@@ -864,9 +996,6 @@ int main( int argc, char* argv[] ) {
     
           MPI_Recv( message,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
           MPI_Recv( message,   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
-          MPI_Send(nextPart[0], ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD );
-
-          MPI_Recv(nextPart[ROWS-1],   ROWSIZE, MPI_CHAR,    slaveID,     0,  MPI_COMM_WORLD, &status );
 
         }
       }
@@ -882,16 +1011,19 @@ int main( int argc, char* argv[] ) {
       int m1;
       int m2;
       MPI_Recv(message, ROWSIZE, MPI_CHAR,    0,     0,  MPI_COMM_WORLD, &status );
+      printf("message one ---  %s\n", message );
       MPI_Send( message,   ROWSIZE, MPI_CHAR,    0,     0,  MPI_COMM_WORLD );
-      MPI_Send( nextPart[ROWS-1],   ROWSIZE, MPI_CHAR,    0,     0,  MPI_COMM_WORLD );
       
       m1 = atoi(message);
       MPI_Recv(message, ROWSIZE, MPI_CHAR,    0,     0,  MPI_COMM_WORLD, &status );
       MPI_Send( message,   ROWSIZE, MPI_CHAR,    0,     0,  MPI_COMM_WORLD );
 
+      printf("message two --- %s\n", message );
       m2 = atoi(message);
+      printf("messages %d --- %d\n", m1, m2 );
+      printf("RANNNNK %d --- \n", my_rank);
+      printf("E AGOROOOOOOOOOOOOOOOOAOAOOAOAOAOAOAAAOAOAOAAOAOAOAAOA %d --- \n", my_rank);
 
-      MPI_Recv(nextPart[0], ROWSIZE, MPI_CHAR,    0,     0,  MPI_COMM_WORLD, &status );
 
       if(m2 > m1){
         lowerRow = m1;
@@ -900,6 +1032,9 @@ int main( int argc, char* argv[] ) {
         lowerRow = m2;
         upperRow = m1;
       }
+
+      printf("lowerRow %d --- upperRow %d\n", lowerRow, upperRow );
+
 
         for (row = lowerRow; row < upperRow; row++) {// each row
     
@@ -956,23 +1091,41 @@ int main( int argc, char* argv[] ) {
           }
         }
 
+      //MPI_Recv( nextPart[ROWS/2-1], ROWSIZE, MPI_CHAR,    0,     0,  MPI_COMM_WORLD, &status );
+      GLOBAL = GLOBAL + 1;
+
+
     }//fim else slaves
 
+ 
+
+
+
     // copy future to dish
-    tmp = part;
-    part = nextPart;
-    nextPart = tmp;
+    //tmp = part;
+    //part = nextPart;
+    //nextPart = tmp;
 
   } //final steps (generatins)
 
+
+
+  end = get_wall_time();
+  //printf("Total time elasped is %lf \n",(end-start));
   t2 = MPI_Wtime(); // termina a contagem do tempo
   MPI_Finalize();
   //display(part);
   if (my_rank == 0 ) {
-    display( part );       // show initial step
-    printf("\nTempo de execucao: %f\n\n", t2-t1); 
+    display( nextPart );       // show initial step
+    //printf("%s\n",nextPart[ROWS]);       // show initial step
+    //printf("---------------------------\n");       // show initial step
+    //printf("%s\n",nextPart[ROWS/2-1] );       // show initial step
+    //printf("\nTempo de execucao: %f\n\n", t2-t1); 
   }
 
+
+
+  return 0;
 
 
 
